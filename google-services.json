@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "356842255584",
+    "project_id": "reclaimit-89017",
+    "storage_bucket": "reclaimit-89017.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:356842255584:android:7e898662d379a9fb708c85",
+        "android_client_info": {
+          "package_name": "com.example.reclaimitapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDt7hGH92zx5bfDAMQ3bwiQ89eWr0N52mg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
