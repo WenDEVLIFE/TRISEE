@@ -1,48 +1,38 @@
-import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-type DriverRideHistory = {
-  id: string;
-  date: string;
-  passenger: string;
-  pickup: string;
-  dropoff: string;
-  fare: string;
-  status: "Completed" | "Cancelled";
-};
-
-const DRIVER_RIDE_HISTORY: DriverRideHistory[] = [
-  {
-    id: "1",
-    date: "Apr 04, 2026 - 10:20 AM",
-    passenger: "Juan Dela Cruz",
-    pickup: "SM City Tuguegarao",
-    dropoff: "Buntun Bridge",
-    fare: "₱50",
-    status: "Completed",
-  },
-  {
-    id: "2",
-    date: "Apr 03, 2026 - 08:15 AM",
-    passenger: "Maria Santos",
-    pickup: "CSU Andrews",
-    dropoff: "Centro 08",
-    fare: "₱35",
-    status: "Completed",
-  },
-  {
-    id: "3",
-    date: "Apr 02, 2026 - 06:40 PM",
-    passenger: "Pedro Reyes",
-    pickup: "Robinsons Place",
-    dropoff: "Bagay Road",
-    fare: "₱45",
-    status: "Cancelled",
-  },
-];
+import { auth } from "../../firebaseConfig";
+import { subscribeDriverRideHistory, type RideListenerResult } from "../service/ride";
 
 export default function DriverHistory() {
+  const [history, setHistory] = useState<RideListenerResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = subscribeDriverRideHistory(currentUser.uid, (rides) => {
+      setHistory(rides);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingBox}>
+          <ActivityIndicator size="large" color="#005EFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -50,14 +40,19 @@ export default function DriverHistory() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {DRIVER_RIDE_HISTORY.map((ride) => (
+        {history.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No driver history yet</Text>
+            <Text style={styles.emptyText}>Completed and cancelled trips will appear here.</Text>
+          </View>
+        ) : history.map((ride) => (
           <View key={ride.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.date}>{ride.date}</Text>
+              <Text style={styles.date}>Ride #{ride.rideId.slice(0, 6)}</Text>
               <Text
                 style={[
                   styles.status,
-                  ride.status === "Completed"
+                  ride.status === "completed"
                     ? styles.statusCompleted
                     : styles.statusCancelled,
                 ]}
@@ -68,22 +63,22 @@ export default function DriverHistory() {
 
             <View style={styles.row}>
               <Text style={styles.label}>Passenger</Text>
-              <Text style={styles.value}>{ride.passenger}</Text>
+              <Text style={styles.value}>{ride.passengerName}</Text>
             </View>
 
             <View style={styles.row}>
               <Text style={styles.label}>Pickup</Text>
-              <Text style={styles.value}>{ride.pickup}</Text>
+              <Text style={styles.value}>{ride.pickupLocation}</Text>
             </View>
 
             <View style={styles.row}>
               <Text style={styles.label}>Drop-off</Text>
-              <Text style={styles.value}>{ride.dropoff}</Text>
+              <Text style={styles.value}>{ride.dropoffLocation}</Text>
             </View>
 
             <View style={styles.earningsRow}>
               <Text style={styles.earningsLabel}>Cash Collected</Text>
-              <Text style={styles.earningsValue}>{ride.fare}</Text>
+              <Text style={styles.earningsValue}>₱{ride.fareAmount}</Text>
             </View>
           </View>
         ))}
@@ -114,6 +109,10 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
+  loadingBox: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F7F9FC" },
+  emptyBox: { backgroundColor: "#fff", borderRadius: 14, padding: 20, alignItems: "center", borderWidth: 1, borderColor: "#EDF1F7" },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#2E3A59", marginBottom: 6 },
+  emptyText: { fontSize: 14, color: "#8E99B3", textAlign: "center" },
   card: {
     backgroundColor: "#fff",
     borderRadius: 14,

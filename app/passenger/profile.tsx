@@ -1,10 +1,13 @@
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { signOut, updatePassword, updateProfile } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,17 +16,21 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../../firebaseConfig";
+import { auth, db, storage } from "../../firebaseConfig";
 
 export default function PassengerProfile() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [profileImage, setProfileImage] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasValidProfileImage = profileImage.trim().length > 0 && !avatarImageFailed;
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -39,6 +46,7 @@ export default function PassengerProfile() {
       try {
         setEmail(firebaseUser.email || "");
         setName(firebaseUser.displayName || "");
+        setProfileImage(firebaseUser.photoURL || "");
 
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
         if (userDoc.exists()) {
@@ -46,6 +54,10 @@ export default function PassengerProfile() {
           setName(typeof data.fullName === "string" ? data.fullName : firebaseUser.displayName || "");
           setPhone(typeof data.phone === "string" ? data.phone : "");
           setEmail(typeof data.email === "string" ? data.email : firebaseUser.email || "");
+          setProfileImage(
+            typeof data.profileImage === "string" ? data.profileImage : firebaseUser.photoURL || ""
+          );
+          setAvatarImageFailed(false);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to load profile.";
@@ -85,6 +97,7 @@ export default function PassengerProfile() {
           fullName: name.trim(),
           phone: phone.trim(),
           email: email.trim() || firebaseUser.email || "",
+          profileImage: profileImage || firebaseUser.photoURL || "",
           role: "user",
           userType: "passenger",
           updatedAt: serverTimestamp(),
@@ -98,6 +111,67 @@ export default function PassengerProfile() {
       Alert.alert("Update failed", message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const uploadLocalFileToStorage = async (uri: string, storagePath: string) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const fileRef = ref(storage, storagePath);
+    await uploadBytes(fileRef, blob);
+    return getDownloadURL(fileRef);
+  };
+
+  const handleChangeProfilePicture = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      Alert.alert("Session expired", "Please sign in again.");
+      router.replace("/sign-in");
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Permission needed", "Please allow gallery access to change your profile picture.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets?.[0]?.uri) {
+        return;
+      }
+
+      setIsUploadingImage(true);
+      const uploadedUrl = await uploadLocalFileToStorage(
+        result.assets[0].uri,
+        `users/${firebaseUser.uid}/profile-${Date.now()}.jpg`
+      );
+
+      await updateProfile(firebaseUser, { photoURL: uploadedUrl });
+
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          profileImage: uploadedUrl,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setProfileImage(uploadedUrl);
+      setAvatarImageFailed(false);
+      Alert.alert("Success", "Profile picture updated successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to change profile picture.";
+      Alert.alert("Upload failed", message);
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -150,10 +224,27 @@ export default function PassengerProfile() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarLetter}>{(name.trim().charAt(0) || "U").toUpperCase()}</Text>
+            {hasValidProfileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatarImage}
+                onError={() => setAvatarImageFailed(true)}
+              />
+            ) : (
+              <Text style={styles.avatarLetter}>{(name.trim().charAt(0) || "U").toUpperCase()}</Text>
+            )}
           </View>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.status}>Passenger</Text>
+          <TouchableOpacity
+            style={[styles.secondaryButton, styles.avatarButton, isUploadingImage && styles.buttonDisabled]}
+            onPress={handleChangeProfilePicture}
+            disabled={isUploadingImage || isSaving || isChangingPassword}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {isUploadingImage ? "Uploading..." : "Change Profile Picture"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formGroup}>
@@ -216,11 +307,13 @@ const styles = StyleSheet.create({
   avatarContainer: { alignItems: "center", marginBottom: 30 },
   avatarPlaceholder: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: "#005EFF",
-    justifyContent: "center", alignItems: "center", marginBottom: 12
+    justifyContent: "center", alignItems: "center", marginBottom: 12, overflow: "hidden"
   },
+  avatarImage: { width: "100%", height: "100%" },
   avatarLetter: { fontSize: 32, fontWeight: "bold", color: "#fff" },
   name: { fontSize: 22, fontWeight: "bold", color: "#2E3A59" },
   status: { fontSize: 14, color: "#8E99B3", marginTop: 4 },
+  avatarButton: { marginTop: 12, minWidth: 220 },
 
   formGroup: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: "600", color: "#8E99B3", marginBottom: 8 },

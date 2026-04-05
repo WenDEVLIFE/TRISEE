@@ -1,17 +1,39 @@
 import { useRouter } from "expo-router";
-import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Mock Data
-const RIDE_HISTORY = [
-  { id: "1", date: "Oct 24, 2026 - 10:30 AM", dropoff: "SM City Tuguegarao", price: "₱50", status: "Completed" },
-  { id: "2", date: "Oct 22, 2026 - 08:15 AM", dropoff: "Cagayan State University", price: "₱30", status: "Completed" },
-  { id: "3", date: "Oct 20, 2026 - 05:40 PM", dropoff: "Buntun Bridge", price: "₱40", status: "Cancelled" },
-];
+import { auth } from "../../firebaseConfig";
+import { subscribePassengerRideHistory, type RideListenerResult } from "../service/ride";
 
 export default function PassengerHistory() {
   const router = useRouter();
+  const [history, setHistory] = useState<RideListenerResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = subscribePassengerRideHistory(currentUser.uid, (rides) => {
+      setHistory(rides);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingBox}>
+          <ActivityIndicator size="large" color="#005EFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -24,13 +46,18 @@ export default function PassengerHistory() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {RIDE_HISTORY.map((ride) => (
+        {history.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No ride history yet</Text>
+            <Text style={styles.emptyText}>Your completed rides will appear here after booking.</Text>
+          </View>
+        ) : history.map((ride) => (
           <View key={ride.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.date}>{ride.date}</Text>
+              <Text style={styles.date}>Ride #{ride.rideId.slice(0, 6)}</Text>
               <Text style={[
                 styles.status, 
-                ride.status === "Cancelled" ? styles.statusCancelled : styles.statusCompleted
+                ride.status === "cancelled" ? styles.statusCancelled : styles.statusCompleted
               ]}>
                 {ride.status}
               </Text>
@@ -39,11 +66,11 @@ export default function PassengerHistory() {
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Drop-off</Text>
-                <Text style={styles.location}>{ride.dropoff}</Text>
+                <Text style={styles.location}>{ride.dropoffLocation}</Text>
               </View>
               <View style={{ alignItems: "flex-end" }}>
                 <Text style={styles.label}>Fare (Cash)</Text>
-                <Text style={styles.price}>{ride.price}</Text>
+                <Text style={styles.price}>₱{ride.fareAmount}</Text>
               </View>
             </View>
           </View>
@@ -64,6 +91,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "600", color: "#2E3A59" },
 
   scroll: { padding: 16 },
+  loadingBox: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F7F9FC" },
+  emptyBox: { backgroundColor: "#fff", borderRadius: 12, padding: 20, alignItems: "center", borderWidth: 1, borderColor: "#EDF1F7" },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#2E3A59", marginBottom: 6 },
+  emptyText: { fontSize: 14, color: "#8E99B3", textAlign: "center" },
 
   card: {
     backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 16,
