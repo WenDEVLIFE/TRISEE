@@ -115,9 +115,16 @@ const SignIn = () => {
           <Text style={styles.gButtonText}>Log In</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/create-account")}>
-          <Text style={styles.switchText}>No account yet? Sign Up</Text>
-        </TouchableOpacity>
+        <View style={styles.signUpRow}>
+          <Text style={styles.switchTextBase}>No account yet? Sign up as: </Text>
+          <TouchableOpacity onPress={() => router.push("/passenger/sign-up")}>
+            <Text style={styles.switchTextLink}>Passenger</Text>
+          </TouchableOpacity>
+          <Text style={styles.switchTextBase}> or </Text>
+          <TouchableOpacity onPress={() => router.push("/create-account")}>
+            <Text style={styles.switchTextLink}>Driver</Text>
+          </TouchableOpacity>
+        </View>
 
         {usePhone && (
           <Text style={styles.noteText}>
@@ -241,12 +248,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  switchText: {
+  signUpRow: {
+    flexDirection: "row",
     marginTop: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  switchTextBase: {
+    fontSize: 15,
+    color: "gray",
+    fontWeight: "500",
+  },
+  switchTextLink: {
     fontSize: 15,
     color: "#005eff",
-    fontWeight: "500",
-    textAlign: "center",
+    fontWeight: "bold",
   },
 
   noteText: {

@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.yuqi_triste.one"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/trisee.png"
