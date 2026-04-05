@@ -2,16 +2,21 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+const env = import.meta.env as Record<string, string | undefined>;
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAJ8S_cK-Pd59nTH2cdA1gMlFcO68bnl2w",
-  authDomain: "trisee-one.firebaseapp.com",
-  projectId: "trisee-one",
-  storageBucket: "trisee-one.firebasestorage.app",
-  messagingSenderId: "995524196062",
-  appId: "1:995524196062:web:193a3f5a9b55ad2198744f",
+  apiKey: env["VITE_FIREBASE_API_KEY"] ?? "AIzaSyD2iEMxNnavxhH0KeazzgEPTMc3Y8kvOlM",
+  authDomain: env["VITE_FIREBASE_AUTH_DOMAIN"] ?? "reclaimit-89017.firebaseapp.com",
+  projectId: env["VITE_FIREBASE_PROJECT_ID"] ?? "reclaimit-89017",
+  storageBucket: env["VITE_FIREBASE_STORAGE_BUCKET"] ?? "reclaimit-89017.firebasestorage.app",
+  messagingSenderId:
+    env["VITE_FIREBASE_MESSAGING_SENDER_ID"] ?? "356842255584",
+  appId: env["VITE_FIREBASE_APP_ID"] ?? "1:356842255584:web:575033be87c96e17708c85",
+  measurementId: env["VITE_FIREBASE_MEASUREMENT_ID"] ?? "G-D423J943K0",
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export { app };

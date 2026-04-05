@@ -5,15 +5,15 @@ import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import React, { useMemo, useState } from "react";
 import {
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { auth } from "../firebaseConfig";
 
@@ -47,7 +47,7 @@ export default function PersonalInfoTwo() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const saved = await AsyncStorage.getItem("personal-info-two");
+        const saved = await AsyncStorage.getItem("driver-clearance-info");
         if (saved) {
           const data = JSON.parse(saved);
           setClearance(data.clearance || "");
@@ -94,7 +94,7 @@ export default function PersonalInfoTwo() {
         uploadedImage,
       };
 
-      await AsyncStorage.setItem("personal-info-two", JSON.stringify(data));
+      await AsyncStorage.setItem("driver-clearance-info", JSON.stringify(data));
 
       router.push("/personal-info-three");
     } catch (error) {

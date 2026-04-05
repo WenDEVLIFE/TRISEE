@@ -1,8 +1,7 @@
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { auth, db } from "./firebase";
+import { auth } from "./firebase";
 import AccountManagementPage from "./pages/AccountManagementPage";
 import DriverApprovalsPage from "./pages/DriverApprovalsPage";
 import MonitoringPage from "./pages/MonitoringPage";
@@ -11,21 +10,7 @@ import ReportingPage from "./pages/ReportingPage";
 type AuthState = {
   loading: boolean;
   user: User | null;
-  isAdmin: boolean;
 };
-
-async function checkAdminRole(uid: string) {
-  const userDoc = await getDoc(doc(db, "users", uid));
-  if (userDoc.exists()) {
-    const data = userDoc.data();
-    if (data.role === "admin" || data.userType === "admin") {
-      return true;
-    }
-  }
-
-  const adminDoc = await getDoc(doc(db, "admins", uid));
-  return adminDoc.exists();
-}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -39,16 +24,28 @@ function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      const isAdmin = await checkAdminRole(credential.user.uid);
-      if (!isAdmin) {
-        await signOut(auth);
-        setError("This account does not have admin access.");
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      navigate("/monitoring", { replace: true });
+    } catch (error) {
+      const code = error instanceof Error ? (error as { code?: string }).code : undefined;
+      console.error("Admin sign-in failed:", error);
+
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+        setError(`Invalid email or password${code ? ` (${code})` : ""}.`);
         return;
       }
-      navigate("/monitoring", { replace: true });
-    } catch {
-      setError("Unable to sign in. Check your credentials and try again.");
+
+      if (code === "permission-denied") {
+        setError(`Firestore blocked access${code ? ` (${code})` : ""}.`);
+        return;
+      }
+
+      if (code === "auth/network-request-failed") {
+        setError(`Network error while signing in${code ? ` (${code})` : ""}.`);
+        return;
+      }
+
+      setError(`Unable to sign in${code ? ` (${code})` : ""}.`);
     } finally {
       setSubmitting(false);
     }
@@ -145,18 +142,11 @@ function ProtectedApp() {
   const [authState, setAuthState] = useState<AuthState>({
     loading: true,
     user: null,
-    isAdmin: false,
   });
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setAuthState({ loading: false, user: null, isAdmin: false });
-        return;
-      }
-
-      const isAdmin = await checkAdminRole(user.uid);
-      setAuthState({ loading: false, user, isAdmin });
+    return onAuthStateChanged(auth, (user) => {
+      setAuthState({ loading: false, user });
     });
   }, []);
 
@@ -164,20 +154,12 @@ function ProtectedApp() {
     return <div className="loading">Loading admin panel...</div>;
   }
 
-  if (!authState.user) {
-    return location.pathname === "/login" ? <LoginPage /> : <Navigate to="/login" replace />;
-  }
-
-  if (!authState.isAdmin) {
-    return (
-      <div className="loading">
-        Signed in account is not an admin. Please contact super admin.
-      </div>
-    );
-  }
-
   if (location.pathname === "/login") {
-    return <Navigate to="/monitoring" replace />;
+    return authState.user ? <Navigate to="/monitoring" replace /> : <LoginPage />;
+  }
+
+  if (!authState.user) {
+    return <Navigate to="/login" replace />;
   }
 
   return <DashboardLayout user={authState.user} />;

@@ -29,11 +29,13 @@ const DrivingLicense = () => {
 
   const [frontImage, setFrontImage] = React.useState<string | null>(null);
   const [backImage, setBackImage] = React.useState<string | null>(null);
+  const [idType, setIdType] = React.useState("");
 
   const [licenseNumber, setLicenseNumber] = React.useState("");
   const [expirationDate, setExpirationDate] = React.useState("");
   const [ageAbove56, setAgeAbove56] = React.useState("");
   const [showAgeModal, setShowAgeModal] = React.useState(false);
+  const [showIdTypeModal, setShowIdTypeModal] = React.useState(false);
 
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
@@ -43,12 +45,13 @@ const DrivingLicense = () => {
   React.useEffect(() => {
     const loadSavedData = async () => {
       try {
-        const savedData = await AsyncStorage.getItem("personal-info-two");
+        const savedData = await AsyncStorage.getItem("driver-license-info");
 
         if (savedData) {
           const parsed = JSON.parse(savedData);
           setFrontImage(parsed.frontImage || null);
           setBackImage(parsed.backImage || null);
+          setIdType(parsed.idType || "");
           setLicenseNumber(parsed.licenseNumber || "");
           setExpirationDate(parsed.expirationDate || "");
           setAgeAbove56(parsed.ageAbove56 || "");
@@ -70,9 +73,20 @@ const DrivingLicense = () => {
   }, []);
 
   const ageOptions = ["Yes", "No"];
+  const idTypeOptions = [
+    "Driver License",
+    "Passport",
+    "UMID",
+    "PhilHealth ID",
+    "Postal ID",
+    "National ID",
+    "SSS ID",
+    "Voter's ID",
+  ];
 
   const isFrontImageValid = !!frontImage;
   const isBackImageValid = !!backImage;
+  const isIdTypeValid = idType.trim().length > 0;
   const isLicenseNumberValid = licenseNumber.trim().length > 0;
   const isExpirationDateValid = expirationDate.trim().length > 0;
   const isAgeAbove56Valid = ageAbove56.trim().length > 0;
@@ -80,6 +94,7 @@ const DrivingLicense = () => {
   const isFormFilled =
     isFrontImageValid &&
     isBackImageValid &&
+    isIdTypeValid &&
     isLicenseNumberValid &&
     isExpirationDateValid &&
     isAgeAbove56Valid;
@@ -151,13 +166,14 @@ const DrivingLicense = () => {
       const formData = {
         frontImage,
         backImage,
+        idType,
         licenseNumber,
         expirationDate,
         ageAbove56,
       };
 
       await AsyncStorage.setItem(
-        "personal-info-two",
+        "driver-license-info",
         JSON.stringify(formData)
       );
 
@@ -294,6 +310,30 @@ const DrivingLicense = () => {
         )}
 
         <Text style={styles.label}>
+          ID Type <Text style={styles.required}>*</Text>
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.dropdown,
+            touched && !isIdTypeValid && styles.errorBorder,
+          ]}
+          onPress={() => setShowIdTypeModal(true)}
+        >
+          <Text
+            style={[
+              styles.dropdownText,
+              !idType && styles.placeholderText,
+            ]}
+          >
+            {idType || "Select ID Type"}
+          </Text>
+          <Text style={styles.dropdownArrow}>⌄</Text>
+        </TouchableOpacity>
+        {touched && !isIdTypeValid && (
+          <Text style={styles.errorText}>Required</Text>
+        )}
+
+        <Text style={styles.label}>
           License Number <Text style={styles.required}>*</Text>
         </Text>
         <TextInput
@@ -412,6 +452,33 @@ const DrivingLicense = () => {
               themeVariant="light"
             />
           </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={showIdTypeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowIdTypeModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowIdTypeModal(false)}
+        >
+          <View style={styles.modalBox}>
+            {idTypeOptions.map((item) => (
+              <TouchableOpacity
+                key={item}
+                style={styles.optionItem}
+                onPress={() => {
+                  setIdType(item);
+                  setShowIdTypeModal(false);
+                }}
+              >
+                <Text style={styles.optionText}>{item}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </Pressable>
       </Modal>
 

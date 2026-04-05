@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   SafeAreaView,
@@ -15,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { auth } from "../firebaseConfig";
+import { finalizeDriverRegistration } from "./service/registration";
 
 export default function PersonalInfoThree() {
   const router = useRouter();
@@ -36,7 +38,7 @@ export default function PersonalInfoThree() {
   useEffect(() => {
     const loadSavedData = async () => {
       try {
-        const savedData = await AsyncStorage.getItem("personal-info-three");
+        const savedData = await AsyncStorage.getItem("driver-declaration-info");
         if (savedData) {
           const parsed = JSON.parse(savedData);
 
@@ -73,13 +75,26 @@ export default function PersonalInfoThree() {
       setIsCreating(true);
 
       await AsyncStorage.setItem(
-        "personal-info-three",
+        "driver-declaration-info",
         JSON.stringify({ checkedItems })
       );
 
+      const uid = await AsyncStorage.getItem("driver-registration-uid");
+      if (!uid) {
+        Alert.alert(
+          "Registration incomplete",
+          "Unable to find the driver account ID. Please go back and finish the verification step again."
+        );
+        return;
+      }
+
+      await finalizeDriverRegistration(uid);
+
       router.replace("/home");
-    } catch {
-      console.log("Save failed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to complete driver registration.";
+      console.error("[PersonalInfoThree] Driver finalize failed:", error);
+      Alert.alert("Save failed", message);
     } finally {
       setIsCreating(false);
     }

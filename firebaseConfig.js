@@ -1,16 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import {
-    getAuth,
-    getReactNativePersistence,
-    initializeAuth,
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD2iEMxXnavxhH0KeazzgEPTMc3Y8kvOlM",
+  apiKey: "AIzaSyDt7hGH92zx5bfDAMQ3bwiQ89eWr0N52mg",
   authDomain: "reclaimit-89017.firebaseapp.com",
   projectId: "reclaimit-89017",
   storageBucket: "reclaimit-89017.firebasestorage.app",
@@ -40,3 +40,4 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 export { app, auth, db, storage };
+

@@ -1,10 +1,4 @@
 import { useRouter } from "expo-router";
-import {
-  createUserWithEmailAndPassword,
-  deleteUser,
-  updateProfile
-} from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
   Alert,
@@ -16,11 +10,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../../firebaseConfig";
 import {
   sendEmailOtpCode,
   verifyEmailOtpCode,
 } from "../service/gmail_smtp_service";
+import { registerPassengerWithEmailOtp } from "../service/registration";
 
 export default function PassengerSignUp() {
   const router = useRouter();
@@ -41,31 +35,6 @@ export default function PassengerSignUp() {
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canSendEmailOtp = name.trim().length > 1 && isEmailValid && phone.trim().length > 5 && !emailOtpVerified;
   const canEmailRegister = name.trim().length > 1 && isEmailValid && password.length >= 6 && emailOtpVerified && phone.trim().length > 5;
-
-  async function savePassengerProfile(params: {
-    uid: string;
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-    phoneVerified: boolean;
-  }) {
-    await setDoc(
-      doc(db, "users", params.uid),
-      {
-        fullName: params.fullName,
-        email: params.email,
-        phone: params.phoneNumber,
-        role: "user",
-        userType: "passenger",
-        accountStatus: "active",
-        isDisabled: false,
-        phoneVerified: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-  }
 
   const handleSendEmailOtp = async () => {
     if (!canSendEmailOtp) {
@@ -136,22 +105,12 @@ export default function PassengerSignUp() {
     try {
       setIsSubmitting(true);
 
-      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await updateProfile(result.user, { displayName: name.trim() });
-
-      try {
-        await savePassengerProfile({
-          uid: result.user.uid,
-          fullName: name.trim(),
-          email: email.trim(),
-          phoneNumber: phone.trim(),
-          phoneVerified: false,
-        });
-      } catch (firestoreError) {
-        // Rollback: delete the Auth user so it doesn't become orphaned
-        await deleteUser(result.user).catch(() => { });
-        throw firestoreError;
-      }
+      await registerPassengerWithEmailOtp({
+        fullName: name.trim(),
+        email: email.trim(),
+        phoneNumber: phone.trim(),
+        password: password.trim(),
+      });
 
       Alert.alert("Success", "Passenger account created successfully.");
       router.replace("/passenger/home");

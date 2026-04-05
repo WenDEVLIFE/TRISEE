@@ -1,25 +1,25 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
-    createUserWithEmailAndPassword
+  createUserWithEmailAndPassword
 } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "../firebaseConfig";
 import {
-    sendEmailOtpCode,
-    verifyEmailOtpCode,
+  sendEmailOtpCode,
+  verifyEmailOtpCode,
 } from "./service/gmail_smtp_service";
 
 export default function DriverOtpVerify() {
@@ -161,6 +161,15 @@ export default function DriverOtpVerify() {
           updatedAt: serverTimestamp(),
         });
         console.log("[DriverOTPVerify] Driver profile saved successfully:", user.uid);
+
+        await AsyncStorage.setItem(
+          "driver-core-info",
+          JSON.stringify({
+            ...driverData,
+            uid: user.uid,
+          })
+        );
+        await AsyncStorage.setItem("driver-registration-uid", user.uid);
       } catch (firestoreError) {
         console.error("[DriverOTPVerify] Firestore write error:", firestoreError);
         throw firestoreError;

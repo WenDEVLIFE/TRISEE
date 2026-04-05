@@ -1,17 +1,18 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import * as React from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 
 const SignIn = () => { 
@@ -23,6 +24,13 @@ const SignIn = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const uid = userCredential.user.uid;
+      const userEmail = userCredential.user.email?.toLowerCase() || "";
+
+      // Check if Admin (Auth-only check, completely bypasses collections)
+      if (userEmail.includes("admin")) {
+        router.replace("/admin/dashboard");
+        return;
+      }
 
       // Check if User (Passenger) exists
       const userDoc = await getDoc(doc(db, "users", uid));
@@ -34,7 +42,32 @@ const SignIn = () => {
       // Check if Driver exists
       const driverDoc = await getDoc(doc(db, "drivers", uid));
       if (driverDoc.exists()) {
+        const driverData = driverDoc.data() || {};
+        const hasUploadedIdDocs = Boolean(
+          driverData.idType && driverData.idFrontImage && driverData.idBackImage
+        );
+
+        if (!hasUploadedIdDocs) {
+          await AsyncStorage.setItem("driver-registration-uid", uid);
+          await AsyncStorage.setItem(
+            "driver-core-info",
+            JSON.stringify({
+              uid,
+              fullName: driverData.fullName || "Driver",
+              email: driverData.email || userCredential.user.email || "",
+              phone: driverData.phone || "",
+              gender: driverData.gender || "",
+              nationality: driverData.nationality || "",
+              pwd: driverData.pwd || "",
+              profileImage: driverData.profileImage || null,
+            })
+          );
+          router.replace("/personal-info-one");
+          return;
+        }
+
         router.replace("/driver/home");
+        return;
       } else {
         router.push("/create-account");
       }
