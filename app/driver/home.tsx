@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2E3A59", paddingVertical: 14, paddingHorizontal: 40, borderRadius: 30,
     shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 4 }, elevation: 6 
   },
-  onlineActive: { backgroundColor: "#FF5E3A" },
+  onlineActive: { backgroundColor: "#005EFF" },
   goOnlineText: { color: "#fff", fontSize: 16, fontWeight: "bold", letterSpacing: 1 },
 
   bottomStats: {
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   statsTitle: { fontSize: 18, fontWeight: "bold", color: "#2E3A59", marginBottom: 16 },
   statsRow: { flexDirection: "row", justifyContent: "space-between" },
   statBox: { alignItems: "center", backgroundColor: "#F7F9FC", flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 12 },
-  statNumber: { fontSize: 20, fontWeight: "bold", color: "#FF5E3A" },
+  statNumber: { fontSize: 20, fontWeight: "bold", color: "#005EFF" },
   statLabel: { fontSize: 12, color: "#8E99B3", marginTop: 4 },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },

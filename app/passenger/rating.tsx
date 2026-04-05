@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, TextInput } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PassengerRating() {
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
 
   submitButton: {
-    width: "100%", height: 54, backgroundColor: "#FF5E3A", borderRadius: 12,
+    width: "100%", height: 54, backgroundColor: "#005EFF", borderRadius: 12,
     justifyContent: "center", alignItems: "center", marginBottom: 16
   },
   disabledButton: { backgroundColor: "#FFD4CC" },

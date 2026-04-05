@@ -1,27 +1,156 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from "react-native";
+import { signOut, updatePassword, updateProfile } from "firebase/auth";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { auth, db } from "../../firebaseConfig";
 
 export default function PassengerProfile() {
   const router = useRouter();
-  const [name, setName] = useState("Juan Dela Cruz");
-  const [phone, setPhone] = useState("09123456789");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        setIsLoading(false);
+        Alert.alert("Session expired", "Please sign in again.");
+        router.replace("/sign-in");
+        return;
+      }
+
+      try {
+        setEmail(firebaseUser.email || "");
+        setName(firebaseUser.displayName || "");
+
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setName(typeof data.fullName === "string" ? data.fullName : firebaseUser.displayName || "");
+          setPhone(typeof data.phone === "string" ? data.phone : "");
+          setEmail(typeof data.email === "string" ? data.email : firebaseUser.email || "");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to load profile.";
+        Alert.alert("Error", message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [router]);
+
+  const handleSaveChanges = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      Alert.alert("Session expired", "Please sign in again.");
+      router.replace("/sign-in");
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert("Missing name", "Full name is required.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      await updateProfile(firebaseUser, {
+        displayName: name.trim(),
+      });
+
+      await setDoc(
+        doc(db, "users", firebaseUser.uid),
+        {
+          uid: firebaseUser.uid,
+          fullName: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || firebaseUser.email || "",
+          role: "user",
+          userType: "passenger",
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      Alert.alert("Success", "Profile updated successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to update profile.";
+      Alert.alert("Update failed", message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      Alert.alert("Session expired", "Please sign in again.");
+      router.replace("/sign-in");
+      return;
+    }
+
+    if (newPassword.trim().length < 6) {
+      Alert.alert("Weak password", "New password must be at least 6 characters.");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      await updatePassword(firebaseUser, newPassword.trim());
+      setNewPassword("");
+      Alert.alert("Success", "Password changed successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to change password.";
+      Alert.alert("Password change failed", message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace("/sign-in");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to log out.";
+      Alert.alert("Logout failed", message);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#005EFF" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backText}>✕</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarLetter}>{name.charAt(0)}</Text>
+            <Text style={styles.avatarLetter}>{(name.trim().charAt(0) || "U").toUpperCase()}</Text>
           </View>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.status}>Passenger</Text>
@@ -37,11 +166,40 @@ export default function PassengerProfile() {
           <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={() => router.back()}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput style={[styles.input, styles.readOnlyInput]} value={email} editable={false} />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>New Password</Text>
+          <TextInput
+            style={styles.input}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+            placeholder="Enter new password"
+          />
+          <TouchableOpacity
+            style={[styles.secondaryButton, isChangingPassword && styles.buttonDisabled]}
+            onPress={handleChangePassword}
+            disabled={isChangingPassword}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {isChangingPassword ? "Changing Password..." : "Change Password"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+          onPress={handleSaveChanges}
+          disabled={isSaving}
+        >
+          <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save Changes"}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace("/passenger/sign-in")}>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -50,20 +208,14 @@ export default function PassengerProfile() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F7F9FC" },
   container: { flex: 1, backgroundColor: "#F7F9FC" },
-  header: {
-    height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderColor: "#EDF1F7"
-  },
-  backButton: { width: 40, height: 40, justifyContent: "center" },
-  backText: { fontSize: 22, color: "#2E3A59" },
-  title: { fontSize: 18, fontWeight: "600", color: "#2E3A59" },
   
   scroll: { padding: 24 },
   
   avatarContainer: { alignItems: "center", marginBottom: 30 },
   avatarPlaceholder: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: "#FF5E3A",
+    width: 80, height: 80, borderRadius: 40, backgroundColor: "#005EFF",
     justifyContent: "center", alignItems: "center", marginBottom: 12
   },
   avatarLetter: { fontSize: 32, fontWeight: "bold", color: "#fff" },
@@ -76,6 +228,13 @@ const styles = StyleSheet.create({
     height: 50, backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: 16,
     borderWidth: 1, borderColor: "#EDF1F7", fontSize: 16, color: "#2E3A59"
   },
+  readOnlyInput: { backgroundColor: "#F2F4F8", color: "#8E99B3" },
+  secondaryButton: {
+    backgroundColor: "#fff", height: 46, borderRadius: 8,
+    justifyContent: "center", alignItems: "center", marginTop: 10, borderWidth: 1, borderColor: "#2E3A59"
+  },
+  secondaryButtonText: { color: "#2E3A59", fontSize: 15, fontWeight: "700" },
+  buttonDisabled: { opacity: 0.6 },
 
   saveButton: {
     backgroundColor: "#2E3A59", height: 50, borderRadius: 8,
@@ -84,8 +243,8 @@ const styles = StyleSheet.create({
   saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   
   logoutButton: {
-    backgroundColor: "transparent", height: 50, borderRadius: 8, borderWidth: 1, borderColor: "#FF5E3A",
+    backgroundColor: "transparent", height: 50, borderRadius: 8, borderWidth: 1, borderColor: "#005EFF",
     justifyContent: "center", alignItems: "center", marginTop: 12
   },
-  logoutButtonText: { color: "#FF5E3A", fontSize: 16, fontWeight: "bold" },
+  logoutButtonText: { color: "#005EFF", fontSize: 16, fontWeight: "bold" },
 });

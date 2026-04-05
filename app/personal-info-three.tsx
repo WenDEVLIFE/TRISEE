@@ -1,21 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
+import { updatePassword } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Modal,
-  Pressable,
+  Button,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 import { finalizeDriverRegistration } from "./service/registration";
 
 export default function PersonalInfoThree() {
@@ -32,8 +34,13 @@ export default function PersonalInfoThree() {
   const [checkedItems, setCheckedItems] = useState<boolean[]>(
     Array(declarations.length).fill(false)
   );
-  const [showMenu, setShowMenu] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [philHealthId, setPhilHealthId] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [currentUid, setCurrentUid] = useState<string | null>(null);
+  const [userIdPicture, setUserIdPicture] = useState("");
+  const [idType, setIdType] = useState("");
 
   useEffect(() => {
     const loadSavedData = async () => {
@@ -54,7 +61,43 @@ export default function PersonalInfoThree() {
       }
     };
 
+    const fetchUser = async () => {
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) return;
+
+      setCurrentUid(firebaseUser.uid);
+      setPhotoUrl(firebaseUser.photoURL || "");
+
+      const [driverSnap, userSnap] = await Promise.all([
+        getDoc(doc(db, "drivers", firebaseUser.uid)),
+        getDoc(doc(db, "users", firebaseUser.uid)),
+      ]);
+
+      if (driverSnap.exists()) {
+        const driverData = driverSnap.data();
+        setIdType(typeof driverData.idType === "string" ? driverData.idType : "");
+        const idPicture =
+          typeof driverData.idFrontImage === "string"
+            ? driverData.idFrontImage
+            : typeof driverData.idBackImage === "string"
+              ? driverData.idBackImage
+              : "";
+        setUserIdPicture(idPicture);
+      }
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setPhilHealthId(
+          typeof userData.philHealthId === "string" ? userData.philHealthId : ""
+        );
+        if (!photoUrl && typeof userData.photoUrl === "string") {
+          setPhotoUrl(userData.photoUrl);
+        }
+      }
+    };
+
     loadSavedData();
+    fetchUser();
   }, []);
 
   const allChecked = useMemo(
@@ -92,7 +135,10 @@ export default function PersonalInfoThree() {
 
       router.replace("/home");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to complete driver registration.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to complete driver registration.";
       console.error("[PersonalInfoThree] Driver finalize failed:", error);
       Alert.alert("Save failed", message);
     } finally {
@@ -100,19 +146,47 @@ export default function PersonalInfoThree() {
     }
   };
 
+  const updateProfile = async () => {
+    if (!currentUid) {
+      Alert.alert("Not signed in", "Please sign in again and retry.");
+      return;
+    }
+
+    await Promise.all([
+      updateDoc(doc(db, "users", currentUid), {
+        photoUrl,
+        philHealthId,
+      }),
+      updateDoc(doc(db, "drivers", currentUid), {
+        idType,
+      }),
+    ]);
+
+    Alert.alert("Success", "Profile updated successfully.");
+  };
+
+  const changePasswordHandler = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      Alert.alert("Not signed in", "Please sign in again and retry.");
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      Alert.alert("Missing password", "Please enter a new password.");
+      return;
+    }
+
+    await updatePassword(firebaseUser, newPassword.trim());
+    setNewPassword("");
+    Alert.alert("Success", "Password changed successfully.");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={26} color="#111" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setShowMenu(true)}
-        >
-          <Ionicons name="ellipsis-vertical" size={22} color="#111" />
-          <View style={styles.redDot} />
         </TouchableOpacity>
       </View>
 
@@ -153,6 +227,52 @@ export default function PersonalInfoThree() {
             </TouchableOpacity>
           ))}
         </View>
+
+        <Text style={styles.title}>Edit Profile</Text>
+
+        <Text style={styles.subtitle}>
+          View your uploaded ID picture and edit your ID type. You can also
+          update profile details and password.
+        </Text>
+
+        <View style={styles.card}>
+          <Text>Edit Photo URL:</Text>
+          <TextInput
+            style={styles.input}
+            value={photoUrl}
+            onChangeText={setPhotoUrl}
+            placeholder="Enter Photo URL"
+          />
+          <Text>Edit PhilHealth ID:</Text>
+          <TextInput
+            style={styles.input}
+            value={philHealthId}
+            onChangeText={setPhilHealthId}
+            placeholder="Enter PhilHealth ID"
+          />
+          <Button title="Update Profile" onPress={updateProfile} />
+          <Text>Change Password:</Text>
+          <TextInput
+            style={styles.input}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="Enter New Password"
+            secureTextEntry
+          />
+          <Button title="Change Password" onPress={changePasswordHandler} />
+          <Text>Edit ID Type:</Text>
+          <TextInput
+            style={styles.input}
+            value={idType}
+            onChangeText={setIdType}
+            placeholder="Enter ID Type"
+          />
+          <Text>User ID Picture:</Text>
+          <Image
+            source={{ uri: userIdPicture }}
+            style={{ width: 100, height: 100 }}
+          />
+        </View>
       </ScrollView>
 
       <View style={styles.bottomButtons}>
@@ -183,31 +303,6 @@ export default function PersonalInfoThree() {
           )}
         </TouchableOpacity>
       </View>
-
-      <Modal
-        visible={showMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMenu(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowMenu(false)}
-        >
-          <View style={styles.menuBox}>
-            <TouchableOpacity
-              style={styles.optionItem}
-              onPress={async () => {
-                setShowMenu(false);
-                await signOut(auth);
-                router.replace("/sign-in");
-              }}
-            >
-              <Text style={styles.optionText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -221,7 +316,7 @@ const styles = StyleSheet.create({
 
   topRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 8,
     paddingBottom: 12,
@@ -231,23 +326,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     justifyContent: "center",
-  },
-
-  menuButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  redDot: {
-    position: "absolute",
-    top: 5,
-    right: 3,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "red",
   },
 
   scrollContent: {
@@ -359,34 +437,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.12)",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    paddingTop: 60,
-    paddingRight: 20,
-  },
-
-  menuBox: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    width: 150,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-
-  optionItem: {
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-  },
-
-  optionText: {
-    fontSize: 17,
-    color: "#111",
-    fontWeight: "500",
+  input: {
+    height: 40,
+    borderColor: "#CFCFCF",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 12,
   },
 });

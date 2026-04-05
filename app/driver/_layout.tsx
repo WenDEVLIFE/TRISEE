@@ -6,7 +6,7 @@ export default function DriverLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#FF5E3A",
+        tabBarActiveTintColor: "#005EFF",
         tabBarInactiveTintColor: "#8E99B3",
         tabBarStyle: {
           backgroundColor: "#fff",
@@ -36,6 +36,15 @@ export default function DriverLayout() {
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="receipt-outline" size={size} color={color} />
           ),
         }}
       />

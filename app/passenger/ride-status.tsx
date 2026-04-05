@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapTilerView from "../../components/MapTilerView";
 
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   
   driverMarker: {
     position: "absolute", top: "45%", left: "45%",
-    width: 44, height: 44, backgroundColor: "#FF5E3A", borderRadius: 22,
+    width: 44, height: 44, backgroundColor: "#005EFF", borderRadius: 22,
     justifyContent: "center", alignItems: "center",
     borderWidth: 3, borderColor: "#fff",
     elevation: 6
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   statusHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   statusText: { fontSize: 22, fontWeight: "bold", color: "#2E3A59" },
-  dotPulse: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#FF5E3A" },
+  dotPulse: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#005EFF" },
 
   driverInfo: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#F7F9FC", padding: 16, borderRadius: 12, marginBottom: 20

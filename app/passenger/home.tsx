@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapTilerView from "../../components/MapTilerView";
 
@@ -31,7 +31,7 @@ export default function PassengerHome() {
         
         <View style={styles.locationInputBox}>
           <View style={styles.dotLine}>
-            <View style={[styles.dot, { backgroundColor: "#FF5E3A" }]} />
+            <View style={[styles.dot, { backgroundColor: "#005EFF" }]} />
             <View style={styles.line} />
             <View style={[styles.square, { backgroundColor: "#2E3A59" }]} />
           </View>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   menuButton: { width: 40, height: 40, justifyContent: "center", alignItems: "center", backgroundColor: "#F7F9FC", borderRadius: 20 },
   avatarIcon: { fontSize: 20 },
   menuIcon: { fontSize: 20 },
-  appTitle: { fontSize: 20, fontWeight: "800", color: "#FF5E3A", letterSpacing: 1 },
+  appTitle: { fontSize: 20, fontWeight: "800", color: "#005EFF", letterSpacing: 1 },
   
   mapContainer: { flex: 1, position: "relative", backgroundColor: "#e8edea" },
   mapImage: { width: "100%", height: "100%", resizeMode: "cover", opacity: 0.7 },
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: "#EDF1F7", marginVertical: 4 },
 
   bookButton: {
-    backgroundColor: "#FF5E3A", height: 54, borderRadius: 12, justifyContent: "center", alignItems: "center"
+    backgroundColor: "#005EFF", height: 54, borderRadius: 12, justifyContent: "center", alignItems: "center"
   },
   bookButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 });

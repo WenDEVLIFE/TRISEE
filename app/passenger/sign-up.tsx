@@ -1,18 +1,18 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  sendEmailOtpCode,
-  verifyEmailOtpCode,
+    sendEmailOtpCode,
+    verifyEmailOtpCode,
 } from "../service/gmail_smtp_service";
 import { registerPassengerWithEmailOtp } from "../service/registration";
 
@@ -229,11 +229,11 @@ const styles = StyleSheet.create({
   phoneInput: { flex: 1, paddingHorizontal: 12, fontSize: 16 },
   secondaryButton: {
     height: 46, borderRadius: 8, justifyContent: "center", alignItems: "center",
-    marginBottom: 20, borderWidth: 1, borderColor: "#FF5E3A",
+    marginBottom: 20, borderWidth: 1, borderColor: "#005EFF",
   },
-  secondaryButtonText: { color: "#FF5E3A", fontSize: 15, fontWeight: "700" },
+  secondaryButtonText: { color: "#005EFF", fontSize: 15, fontWeight: "700" },
   button: {
-    backgroundColor: "#FF5E3A", height: 50, borderRadius: 8,
+    backgroundColor: "#005EFF", height: 50, borderRadius: 8,
     justifyContent: "center", alignItems: "center", marginTop: 20
   },
   buttonDisabled: { opacity: 0.5 },

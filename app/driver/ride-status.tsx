@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons"; // Ensure this is installed, but we can fall back to emojis if not
 import MapTilerView from "../../components/MapTilerView";
 
 export default function DriverRideStatus() {
@@ -111,12 +110,12 @@ const styles = StyleSheet.create({
   currentStatus: { fontSize: 16, fontWeight: "bold", color: "#2E3A59", marginBottom: 12, textAlign: "center" },
   progressBar: { flexDirection: "row", gap: 8 },
   progressTick: { flex: 1, height: 6, borderRadius: 3, backgroundColor: "#EDF1F7" },
-  progressTickActive: { backgroundColor: "#FF5E3A" },
+  progressTickActive: { backgroundColor: "#005EFF" },
 
   actionRow: { flexDirection: "row", gap: 12 },
   cancelBtn: { height: 54, paddingHorizontal: 24, borderRadius: 12, backgroundColor: "#F7F9FC", justifyContent: "center", alignItems: "center" },
   cancelText: { color: "#FF3B30", fontSize: 16, fontWeight: "bold" },
-  primaryBtn: { flex: 1, height: 54, borderRadius: 12, backgroundColor: "#FF5E3A", justifyContent: "center", alignItems: "center" },
+  primaryBtn: { flex: 1, height: 54, borderRadius: 12, backgroundColor: "#005EFF", justifyContent: "center", alignItems: "center" },
   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   completeBtn: { height: 54, borderRadius: 12, backgroundColor: "#00BA61", justifyContent: "center", alignItems: "center" },
   completeBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },

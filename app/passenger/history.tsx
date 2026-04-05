@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Mock Data
@@ -78,5 +78,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between" },
   label: { fontSize: 12, color: "#8E99B3", marginBottom: 4 },
   location: { fontSize: 16, fontWeight: "600", color: "#2E3A59" },
-  price: { fontSize: 16, fontWeight: "bold", color: "#FF5E3A" },
+  price: { fontSize: 16, fontWeight: "bold", color: "#005EFF" },
 });
