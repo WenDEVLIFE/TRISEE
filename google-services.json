@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:356842255584:android:7e898662d379a9fb708c85",
+        "mobilesdk_app_id": "1:356842255584:android:14793ad5ac33aa4d708c85",
         "android_client_info": {
-          "package_name": "com.example.reclaimitapp"
+          "package_name": "com.yuqi_triste.one"
         }
       },
       "oauth_client": [],

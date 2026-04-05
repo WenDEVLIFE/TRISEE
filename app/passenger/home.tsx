@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MapTilerView from "../../components/MapTilerView";
 
 export default function PassengerHome() {
   const router = useRouter();
@@ -19,19 +20,9 @@ export default function PassengerHome() {
         </TouchableOpacity>
       </View>
 
-      {/* Map Placeholder */}
+      {/* Map Integration */}
       <View style={styles.mapContainer}>
-        <Image
-          source={{ uri: "https://via.placeholder.com/600x800.png?text=Map+View+%28Integration+Pending%29" }}
-          style={styles.mapImage}
-        />
-        {/* Mock Marker */}
-        <View style={styles.mockMarker}>
-          <Text style={styles.markerText}>🛺</Text>
-        </View>
-        <View style={[styles.mockMarker, { top: "40%", left: "60%" }]}>
-          <Text style={styles.markerText}>🛺</Text>
-        </View>
+        <MapTilerView center={[121.7270, 17.6186]} zoom={14} markers={[{ id: "p", lng: 121.7270, lat: 17.6186, emoji: "🧍" }]} />
       </View>
 
       {/* Bottom Sheet for Booking */}

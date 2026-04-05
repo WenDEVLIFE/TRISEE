@@ -2,11 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
+  signOut
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import * as React from "react";
 import {
   Image,
@@ -20,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../firebaseConfig";
+import { auth } from "../firebaseConfig";
 
 const PersonalInfo = () => {
   const router = useRouter();
@@ -85,60 +82,41 @@ const PersonalInfo = () => {
   };
 
   const handleNext = async () => {
-  try {
-    let user;
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      user = userCredential.user;
-    } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
-        const login = await signInWithEmailAndPassword(auth, email, password);
-        user = login.user;
-      } else {
-        throw error;
-      }
+    if (!email.trim() || !password.trim() || !phone.trim()) {
+      alert("Please fill in all required fields.");
+      return;
     }
 
-    const data = {
-      gender,
-      nationality,
-      pwd,
-      profileImage,
-      email,
-      phone,
-    };
-
-    try {
-      await AsyncStorage.setItem("personal-info", JSON.stringify(data));
-    } catch (storageError) {
-      console.log("Local save failed");
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters long.");
+      return;
     }
 
-    router.push("/personal-info-one");
-
     try {
-      await setDoc(doc(db, "drivers", user.uid), {
-        uid: user.uid,
-        email,
-        phone,
+      const driverData = {
+        fullName: "Driver",
+        email: email.trim(),
+        password: password.trim(),
+        phone: phone.trim(),
         gender,
         nationality,
         pwd,
         profileImage,
-        createdAt: new Date(),
+      };
+
+      await AsyncStorage.setItem(
+        "driver-personal-info",
+        JSON.stringify(driverData)
+      );
+
+      router.push({
+        pathname: "/driver-otp-verify",
+        params: { driverData: JSON.stringify(driverData) },
       });
-    } catch (firestoreError) {
-      console.log("Firestore save failed:", firestoreError);
+    } catch (error: any) {
+      alert(error.message || "Failed to proceed to email verification.");
     }
-  } catch (error: any) {
-    alert(error.message);
-  }
-};
+  };
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topRow}>

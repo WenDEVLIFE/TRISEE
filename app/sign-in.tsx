@@ -11,31 +11,41 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
 
 const SignIn = () => { 
   const router = useRouter();
-  const [identifier, setIdentifier] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [usePhone, setUsePhone] = React.useState(false);
 
   const handleAuth = async () => {
-  try {
-    if (usePhone) {
-      alert("Phone login uses OTP in Firebase.");
-      return;
-    }
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const uid = userCredential.user.uid;
 
-    await signInWithEmailAndPassword(auth, identifier, password);
-    router.push("/create-account");
-  } catch (error) {
-    if (error instanceof Error) {
-      alert(error.message);
-    } else {
-      alert("Something went wrong");
+      // Check if User (Passenger) exists
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists() && userDoc.data().role === "user") {
+        router.replace("/passenger/home");
+        return;
+      }
+
+      // Check if Driver exists
+      const driverDoc = await getDoc(doc(db, "drivers", uid));
+      if (driverDoc.exists()) {
+        router.replace("/driver/home");
+      } else {
+        router.push("/create-account");
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Something went wrong");
+      }
     }
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,50 +66,14 @@ const SignIn = () => {
           <View style={styles.line}></View>
         </View>
 
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleButton, !usePhone && styles.activeToggle]}
-            onPress={() => {
-              setUsePhone(false);
-              setIdentifier("");
-            }}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                !usePhone && styles.activeToggleText,
-              ]}
-            >
-              Email
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.toggleButton, usePhone && styles.activeToggle]}
-            onPress={() => {
-              setUsePhone(true);
-              setIdentifier("");
-            }}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                usePhone && styles.activeToggleText,
-              ]}
-            >
-              Phone Number
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         <TextInput
           style={styles.input}
-          placeholder={usePhone ? "Enter phone number" : "Enter email"}
+          placeholder="Enter email"
           placeholderTextColor="rgba(0,0,0,0.4)"
-          value={identifier}
-          onChangeText={setIdentifier}
+          value={email}
+          onChangeText={setEmail}
           autoCapitalize="none"
-          keyboardType={usePhone ? "phone-pad" : "email-address"}
+          keyboardType="email-address"
         />
 
         <TextInput
@@ -125,153 +99,25 @@ const SignIn = () => {
             <Text style={styles.switchTextLink}>Driver</Text>
           </TouchableOpacity>
         </View>
-
-        {usePhone && (
-          <Text style={styles.noteText}>
-            Phone number + password needs a custom backend. Firebase only
-            supports phone sign-in with OTP.
-          </Text>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-
-  scrollContainer: {
-    alignItems: "center",
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-
-  logo: {
-    width: 800,
-    height: 400,
-    resizeMode: "contain",
-    alignSelf: "center",
-  },
-
-  text: {
-    fontSize: 23,
-    fontWeight: "300",
-    marginTop: -160,
-    marginBottom: 10,
-    color: "black",
-    textAlign: "center",
-  },
-
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "80%",
-    marginTop: 150,
-    marginBottom: 10,
-  },
-
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "black",
-  },
-
-  dividerText: {
-    marginHorizontal: 10,
-    fontSize: 17,
-    color: "black",
-    textAlign: "center",
-  },
-
-  toggleRow: {
-    flexDirection: "row",
-    width: "80%",
-    marginBottom: 10,
-    justifyContent: "space-between",
-  },
-
-  toggleButton: {
-    width: "48%",
-    height: 45,
-    borderWidth: 1,
-    borderColor: "#005eff",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "white",
-  },
-
-  activeToggle: {
-    backgroundColor: "#005eff",
-  },
-
-  toggleText: {
-    color: "#005eff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-  activeToggleText: {
-    color: "white",
-  },
-
-  input: {
-    width: "80%",
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginTop: 15,
-    backgroundColor: "white",
-    color: "black",
-  },
-
-  gButton: {
-    backgroundColor: "#005eff",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginTop: 20,
-    width: "80%",
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  gButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  signUpRow: {
-    flexDirection: "row",
-    marginTop: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  switchTextBase: {
-    fontSize: 15,
-    color: "gray",
-    fontWeight: "500",
-  },
-  switchTextLink: {
-    fontSize: 15,
-    color: "#005eff",
-    fontWeight: "bold",
-  },
-
-  noteText: {
-    marginTop: 15,
-    width: "80%",
-    fontSize: 13,
-    color: "gray",
-    textAlign: "center",
-  },
+  container: { flex: 1, backgroundColor: "white" },
+  scrollContainer: { alignItems: "center", paddingTop: 20, paddingBottom: 40 },
+  logo: { width: 800, height: 400, resizeMode: "contain", alignSelf: "center" },
+  text: { fontSize: 23, fontWeight: "300", marginTop: -160, marginBottom: 10, color: "black", textAlign: "center" },
+  dividerContainer: { flexDirection: "row", alignItems: "center", width: "80%", marginTop: 150, marginBottom: 10 },
+  line: { flex: 1, height: 1, backgroundColor: "black" },
+  dividerText: { marginHorizontal: 10, fontSize: 17, color: "black", textAlign: "center" },
+  input: { width: "80%", height: 50, borderWidth: 1, borderColor: "#ccc", borderRadius: 10, paddingHorizontal: 15, marginTop: 15, backgroundColor: "white", color: "black" },
+  gButton: { backgroundColor: "#005eff", paddingVertical: 12, paddingHorizontal: 20, borderRadius: 10, marginTop: 20, width: "80%", height: 50, justifyContent: "center", alignItems: "center" },
+  gButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
+  signUpRow: { flexDirection: "row", marginTop: 20, justifyContent: "center", alignItems: "center" },
+  switchTextBase: { fontSize: 15, color: "gray", fontWeight: "500" },
+  switchTextLink: { fontSize: 15, color: "#005eff", fontWeight: "bold" },
 });
 
 export default SignIn;

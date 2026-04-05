@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MapTilerView from "../../components/MapTilerView";
 
 export default function PassengerRideStatus() {
   const router = useRouter();
@@ -39,15 +40,15 @@ export default function PassengerRideStatus() {
       </View>
 
       <View style={styles.mapContainer}>
-        <Image
-          source={{ uri: "https://via.placeholder.com/600x800.png?text=Live+Tracking+Map" }}
-          style={styles.mapImage}
+        <MapTilerView 
+          center={[121.7260, 17.6185]} 
+          zoom={15} 
+          markers={
+            currentStatus === "Searching" 
+              ? [{ id: "p", lng: 121.7280, lat: 17.6190, emoji: "🧍" }] 
+              : [{ id: "p", lng: 121.7280, lat: 17.6190, emoji: "🧍" }, { id: "d", lng: 121.7250, lat: 17.6180, emoji: "🛺" }] 
+          } 
         />
-        {currentStatus !== "Searching" && (
-          <View style={styles.driverMarker}>
-            <Text style={styles.markerEmoji}>🛺</Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.statusCard}>
